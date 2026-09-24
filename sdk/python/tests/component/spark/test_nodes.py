@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import pyarrow as pa
 
 from feast.aggregation import Aggregation
 from feast.infra.compute_engines.dag.context import ColumnInfo, ExecutionContext
@@ -9,6 +11,7 @@ from feast.infra.compute_engines.spark.nodes import (
     SparkAggregationNode,
     SparkDedupNode,
     SparkJoinNode,
+    SparkReadNode,
     SparkTransformationNode,
 )
 from tests.example_repos.example_feature_repo_with_bfvs import (
@@ -239,3 +242,55 @@ def test_spark_join_node_executes_point_in_time_join(spark_session):
     assert result_df[1]["driver_id"] == 1002
     assert abs(result_df[1]["source__conv_rate"] - 0.7) < 1e-6
     assert result_df[1]["source__avg_daily_trips"] == 12
+
+
+def test_spark_read_node_ingests_arrow_table_natively(spark_session):
+    table = pa.Table.from_batches(
+        [
+            pa.record_batch(
+                {
+                    "driver_id": pa.array([1, 2], pa.int64()),
+                    "conv_rate": pa.array([0.5, None], pa.float64()),
+                    "event_timestamp": pa.array(
+                        [datetime(2024, 1, 1), datetime(2024, 1, 2)], pa.timestamp("us")
+                    ),
+                }
+            ),
+            pa.record_batch(
+                {
+                    "driver_id": pa.array([3], pa.int64()),
+                    "conv_rate": pa.array([0.7], pa.float64()),
+                    "event_timestamp": pa.array(
+                        [datetime(2024, 1, 3)], pa.timestamp("us")
+                    ),
+                }
+            ),
+        ]
+    )
+    job = MagicMock()  # not a SparkRetrievalJob -> takes the Arrow branch
+    job.to_arrow.return_value = table
+    node = SparkReadNode(
+        name="read",
+        source=MagicMock(),
+        column_info=MagicMock(
+            timestamp_column="event_timestamp", created_timestamp_column=None
+        ),
+        spark_session=spark_session,
+    )
+    expected_schema = spark_session.createDataFrame(table.to_pandas()).schema
+
+    with (
+        patch(
+            "feast.infra.compute_engines.spark.nodes.create_offline_store_retrieval_job",
+            return_value=job,
+        ),
+        patch.object(
+            spark_session, "createDataFrame", wraps=spark_session.createDataFrame
+        ) as create_df,
+    ):
+        result = node.execute(MagicMock())
+
+    assert isinstance(create_df.call_args.args[0], pa.Table)
+    assert result.data.schema == expected_schema
+    rows = sorted(result.data.collect(), key=lambda r: r.driver_id)
+    assert [(r.driver_id, r.conv_rate) for r in rows] == [(1, 0.5), (2, None), (3, 0.7)]
