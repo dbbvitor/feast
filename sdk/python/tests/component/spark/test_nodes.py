@@ -294,3 +294,10 @@ def test_spark_read_node_ingests_arrow_table_natively(spark_session):
     assert result.data.schema == expected_schema
     rows = sorted(result.data.collect(), key=lambda r: r.driver_id)
     assert [(r.driver_id, r.conv_rate) for r in rows] == [(1, 0.5), (2, None), (3, 0.7)]
+    # Native Arrow ingestion must preserve tz-naive timestamps the same way
+    # the old pandas-conversion path did (no implicit tz shift).
+    assert [r.event_timestamp for r in rows] == [
+        datetime(2024, 1, 1),
+        datetime(2024, 1, 2),
+        datetime(2024, 1, 3),
+    ]
