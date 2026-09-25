@@ -1352,6 +1352,146 @@ class TestOfflineStoreMetrics:
         )
 
 
+class TestEmitOfflineStoreRequestMetrics:
+    """Tests for the shared `_emit_offline_store_request_metrics` helper."""
+
+    def test_records_method_label_when_offline_features_enabled(self):
+        import feast.metrics as feast_metrics
+        from feast.infra.offline_stores.offline_store import (
+            _emit_offline_store_request_metrics,
+        )
+
+        with patch.object(
+            feast_metrics,
+            "_config",
+            feast_metrics._MetricsFlags(offline_features=True, audit_logging=False),
+        ):
+            before = offline_store_request_total.labels(
+                method="to_arrow_reader", status="success"
+            )._value.get()
+
+            _emit_offline_store_request_metrics(
+                job=MagicMock(),
+                method="to_arrow_reader",
+                status_label="success",
+                row_count=5,
+                elapsed=0.1,
+            )
+
+            after = offline_store_request_total.labels(
+                method="to_arrow_reader", status="success"
+            )._value.get()
+
+        assert after == before + 1
+
+    def test_skips_metrics_when_offline_features_disabled(self):
+        import feast.metrics as feast_metrics
+        from feast.infra.offline_stores.offline_store import (
+            _emit_offline_store_request_metrics,
+        )
+
+        with patch.object(
+            feast_metrics,
+            "_config",
+            feast_metrics._MetricsFlags(offline_features=False, audit_logging=False),
+        ):
+            before = offline_store_request_total.labels(
+                method="to_arrow_reader", status="success"
+            )._value.get()
+
+            _emit_offline_store_request_metrics(
+                job=MagicMock(),
+                method="to_arrow_reader",
+                status_label="success",
+                row_count=5,
+                elapsed=0.1,
+            )
+
+            after = offline_store_request_total.labels(
+                method="to_arrow_reader", status="success"
+            )._value.get()
+
+        assert after == before
+
+    def test_emits_audit_log_with_correct_fields_when_enabled(self):
+        import feast.metrics as feast_metrics
+        from feast.infra.offline_stores.offline_store import (
+            _emit_offline_store_request_metrics,
+        )
+
+        job = MagicMock()
+        job.metadata.features = ["fv1:f1", "fv1:f2"]
+
+        with (
+            patch.object(
+                feast_metrics,
+                "_config",
+                feast_metrics._MetricsFlags(offline_features=False, audit_logging=True),
+            ),
+            patch.object(feast_metrics, "emit_offline_audit_log") as mock_emit,
+        ):
+            _emit_offline_store_request_metrics(
+                job=job,
+                method="to_arrow_reader",
+                status_label="success",
+                row_count=7,
+                elapsed=2.0,
+            )
+
+        mock_emit.assert_called_once()
+        kwargs = mock_emit.call_args.kwargs
+        assert kwargs["method"] == "to_arrow_reader"
+        assert kwargs["feature_views"] == ["fv1"]
+        assert kwargs["feature_count"] == 2
+        assert kwargs["row_count"] == 7
+        assert kwargs["status"] == "success"
+        assert kwargs["duration_ms"] == pytest.approx(2000.0)
+        start_dt = datetime.fromisoformat(kwargs["start_time"])
+        end_dt = datetime.fromisoformat(kwargs["end_time"])
+        assert (end_dt - start_dt).total_seconds() == pytest.approx(2.0)
+
+    def test_skips_audit_log_when_disabled(self):
+        import feast.metrics as feast_metrics
+        from feast.infra.offline_stores.offline_store import (
+            _emit_offline_store_request_metrics,
+        )
+
+        with (
+            patch.object(
+                feast_metrics,
+                "_config",
+                feast_metrics._MetricsFlags(
+                    offline_features=False, audit_logging=False
+                ),
+            ),
+            patch.object(feast_metrics, "emit_offline_audit_log") as mock_emit,
+        ):
+            _emit_offline_store_request_metrics(
+                job=MagicMock(),
+                method="to_arrow_reader",
+                status_label="success",
+                row_count=7,
+                elapsed=2.0,
+            )
+
+        mock_emit.assert_not_called()
+
+    def test_never_raises_when_metrics_recording_fails(self):
+        from feast.infra.offline_stores.offline_store import (
+            _emit_offline_store_request_metrics,
+        )
+
+        with patch("feast.metrics.offline_store_request_total") as counter:
+            counter.labels.side_effect = RuntimeError("boom")
+            _emit_offline_store_request_metrics(
+                job=MagicMock(),
+                method="to_arrow",
+                status_label="error",
+                row_count=0,
+                elapsed=0.0,
+            )
+
+
 class TestEmitAuditLogs:
     """Tests for structured JSON audit log emission."""
 
@@ -1656,6 +1796,31 @@ class TestRetrievalJobToArrowInstrumentation:
             offline_store_request_latency_seconds.labels(method="to_arrow")._sum.get()
             > before_latency
         )
+
+    def test_elapsed_is_end_minus_start_not_sum(self):
+        """`time.monotonic() - start_wall` must stay subtraction: kills a
+        mutant that turns it into addition, which the "> before" latency
+        assertion above can't distinguish from a real (small) elapsed time."""
+        import pyarrow as pa
+
+        from feast.infra.offline_stores import offline_store as offline_store_module
+
+        table = pa.table({"col": [1]})
+        job = self._make_job(table)
+
+        before_sum = offline_store_request_latency_seconds.labels(
+            method="to_arrow"
+        )._sum.get()
+
+        with patch.object(
+            offline_store_module.time, "monotonic", side_effect=[100.0, 100.25]
+        ):
+            job.to_arrow()
+
+        after_sum = offline_store_request_latency_seconds.labels(
+            method="to_arrow"
+        )._sum.get()
+        assert after_sum - before_sum == pytest.approx(0.25)
 
     def test_error_increments_error_counter(self):
         job = self._make_job(None, raise_on_internal=RuntimeError("query failed"))
