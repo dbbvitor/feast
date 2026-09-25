@@ -152,6 +152,26 @@ def test_to_arrow_reader_records_success_metrics():
     assert kwargs["row_count"] == 3
 
 
+def test_to_arrow_reader_records_elapsed_as_end_minus_start_on_success():
+    """`time.monotonic() - start_wall` must stay subtraction: 10.0/24.0 make
+    every other binary operator (add=34, mul=240, mod=4.0, div=2.4,
+    floordiv=2) disagree with the correct 14.0, unlike a real (small)
+    elapsed time which the plain "was called" checks above can't catch."""
+    job, _ = _job()
+    with (
+        patch(
+            "feast.infra.offline_stores.contrib.trino_offline_store.trino._emit_offline_store_request_metrics"
+        ) as emit,
+        patch(
+            "feast.infra.offline_stores.contrib.trino_offline_store.trino.time.monotonic",
+            side_effect=[10.0, 24.0],
+        ),
+    ):
+        job.to_arrow_reader().read_all()
+
+    assert emit.call_args.kwargs["elapsed"] == pytest.approx(14.0)
+
+
 def test_to_arrow_reader_records_error_metrics_when_query_fails_to_start():
     job, cursor = _job()
     cursor.execute.side_effect = RuntimeError("boom")
@@ -165,6 +185,24 @@ def test_to_arrow_reader_records_error_metrics_when_query_fails_to_start():
     kwargs = emit.call_args.kwargs
     assert kwargs["status_label"] == "error"
     assert kwargs["row_count"] == 0
+
+
+def test_to_arrow_reader_records_elapsed_when_query_fails_to_start():
+    job, cursor = _job()
+    cursor.execute.side_effect = RuntimeError("boom")
+    with (
+        patch(
+            "feast.infra.offline_stores.contrib.trino_offline_store.trino._emit_offline_store_request_metrics"
+        ) as emit,
+        patch(
+            "feast.infra.offline_stores.contrib.trino_offline_store.trino.time.monotonic",
+            side_effect=[10.0, 24.0],
+        ),
+    ):
+        with pytest.raises(RuntimeError):
+            job.to_arrow_reader()
+
+    assert emit.call_args.kwargs["elapsed"] == pytest.approx(14.0)
 
 
 def test_to_arrow_reader_records_error_metrics_when_streaming_fails_midway():
@@ -291,6 +329,15 @@ class TestComplexColumnDepth:
     def test_array_of_array_of_map_is_depth_two(self):
         assert _complex_column_depth("array(array(map(varchar, varchar)))") == 2
 
+    def test_array_of_array_of_array_of_map_is_depth_three(self):
+        """Three levels of array-wrapping is needed to distinguish the correct
+        trailing slice `[:-1]` from an off-by-one `[:-2]`/`[:~1]` mutant: at
+        one or two levels both slices happen to leave the "map("/"row(" prefix
+        intact, so the depth count matches by coincidence; at three levels the
+        over-trimmed variant eats into the "map(" prefix itself and returns
+        None instead of 3."""
+        assert _complex_column_depth("array(array(array(map(a,b))))") == 3
+
     def test_varchar_is_not_complex(self):
         assert _complex_column_depth("varchar") is None
 
@@ -323,6 +370,22 @@ class TestStringifyComplex:
             None,
             str({"a": 1}),
         ]
+
+    def test_negative_depth_raises_type_error(self):
+        """`depth == 0` must stay a strict equality check, not `depth <= 0`:
+        a real column's depth (from _complex_column_depth) is never negative,
+        so calling with depth=-1 on a non-iterable value takes the recursive
+        branch and fails to iterate -- under a `<= 0` mutant it would instead
+        take the `str(value)` branch and return "1" without raising."""
+        with pytest.raises(TypeError):
+            _stringify_complex(1, -1)
+
+    def test_depth_decrements_by_exactly_one_per_level(self):
+        """`depth - 1` must stay subtraction: at depth=4, `>> 1` (=2),
+        `% 1` (=0) and `^ 1` (=5) all disagree with the correct 3 at the
+        first recursion step, unlike depth=1 where all four operations
+        coincidentally give 0."""
+        assert _stringify_complex([[[[1]]]], 4) == [[[["1"]]]]
 
 
 class TestStreamingBatchSizeConfig:

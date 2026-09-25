@@ -321,9 +321,7 @@ class TrinoRetrievalJob(RetrievalJob):
                         df[name] = df[name].map(
                             lambda v, depth=depth: _stringify_complex(v, depth)
                         )
-                    page_table = pyarrow.Table.from_pandas(
-                        df, schema=schema, preserve_index=False
-                    )
+                    page_table = pyarrow.Table.from_pandas(df, schema=schema)
                     for batch in page_table.to_batches():
                         row_count += batch.num_rows
                         yield batch

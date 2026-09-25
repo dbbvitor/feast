@@ -1491,6 +1491,33 @@ class TestEmitOfflineStoreRequestMetrics:
                 elapsed=0.0,
             )
 
+    def test_logs_failure_with_traceback_when_metrics_recording_fails(self):
+        """The debug log on the catch-all except must pass exc_info=True, so
+        the traceback isn't silently dropped: kills a True -> False mutant
+        that the "never raises" test above can't see."""
+        import feast.infra.offline_stores.offline_store as offline_store_module
+        from feast.infra.offline_stores.offline_store import (
+            _emit_offline_store_request_metrics,
+        )
+
+        with (
+            patch("feast.metrics.offline_store_request_total") as counter,
+            patch.object(offline_store_module.logging, "getLogger") as get_logger,
+        ):
+            counter.labels.side_effect = RuntimeError("boom")
+            mock_logger = get_logger.return_value
+            _emit_offline_store_request_metrics(
+                job=MagicMock(),
+                method="to_arrow",
+                status_label="error",
+                row_count=0,
+                elapsed=0.0,
+            )
+
+        mock_logger.debug.assert_called_once_with(
+            "Failed to record offline store metrics", exc_info=True
+        )
+
 
 class TestEmitAuditLogs:
     """Tests for structured JSON audit log emission."""
@@ -1798,9 +1825,12 @@ class TestRetrievalJobToArrowInstrumentation:
         )
 
     def test_elapsed_is_end_minus_start_not_sum(self):
-        """`time.monotonic() - start_wall` must stay subtraction: kills a
-        mutant that turns it into addition, which the "> before" latency
-        assertion above can't distinguish from a real (small) elapsed time."""
+        """`time.monotonic() - start_wall` must stay subtraction: kills
+        mutants that turn it into addition or modulo. 10.0/24.0 are chosen so
+        every other binary operator (add=34, mul=240, div=2.4, floordiv=2,
+        and especially mod=24.0%10.0=4.0) gives a different result than the
+        correct subtraction (14.0); the "> before" latency assertion above
+        can't distinguish any of those from a real (small) elapsed time."""
         import pyarrow as pa
 
         from feast.infra.offline_stores import offline_store as offline_store_module
@@ -1813,14 +1843,14 @@ class TestRetrievalJobToArrowInstrumentation:
         )._sum.get()
 
         with patch.object(
-            offline_store_module.time, "monotonic", side_effect=[100.0, 100.25]
+            offline_store_module.time, "monotonic", side_effect=[10.0, 24.0]
         ):
             job.to_arrow()
 
         after_sum = offline_store_request_latency_seconds.labels(
             method="to_arrow"
         )._sum.get()
-        assert after_sum - before_sum == pytest.approx(0.25)
+        assert after_sum - before_sum == pytest.approx(14.0)
 
     def test_error_increments_error_counter(self):
         job = self._make_job(None, raise_on_internal=RuntimeError("query failed"))
