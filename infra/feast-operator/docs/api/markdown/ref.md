@@ -1031,6 +1031,9 @@ Allowed values: "debug", "info", "warning", "error", "critical". |
 | `dualStack` _boolean_ | DualStack binds the server to the IPv6 wildcard address instead of 0.0.0.0,
 which serves both IPv6 and IPv4 clients on Linux. Enable it on IPv6-only or dual-stack clusters.
 The registry server always binds dual-stack and ignores this setting. |
+| `commandPrefix` _string array_ | CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+server with tools such as opentelemetry-instrument or a profiler. The generated command and
+all its flags are kept. |
 | `volumeMounts` _[VolumeMount](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#volumemount-v1-core) array_ | VolumeMounts defines the list of volumes that should be mounted into the feast container.
 This allows attaching persistent storage, config files, secrets, or other resources
 required by the Feast components. Ensure that each volume mount has a corresponding
@@ -1133,6 +1136,9 @@ Allowed values: "debug", "info", "warning", "error", "critical". |
 | `dualStack` _boolean_ | DualStack binds the server to the IPv6 wildcard address instead of 0.0.0.0,
 which serves both IPv6 and IPv4 clients on Linux. Enable it on IPv6-only or dual-stack clusters.
 The registry server always binds dual-stack and ignores this setting. |
+| `commandPrefix` _string array_ | CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+server with tools such as opentelemetry-instrument or a profiler. The generated command and
+all its flags are kept. |
 | `volumeMounts` _[VolumeMount](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#volumemount-v1-core) array_ | VolumeMounts defines the list of volumes that should be mounted into the feast container.
 This allows attaching persistent storage, config files, secrets, or other resources
 required by the Feast components. Ensure that each volume mount has a corresponding

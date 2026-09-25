@@ -1020,6 +1020,14 @@ spec:
                             description: Server configuration (image, resources, env,
                               TLS, etc.).
                             properties:
+                              commandPrefix:
+                                description: |-
+                                  CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                                  server with tools such as...
+                                items:
+                                  minLength: 1
+                                  type: string
+                                type: array
                               dualStack:
                                 description: DualStack binds the server to the IPv6
                                   wildcard address instead of 0.0.0.
@@ -2421,6 +2429,14 @@ spec:
                       server:
                         description: Creates a remote offline server container
                         properties:
+                          commandPrefix:
+                            description: |-
+                              CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                              server with tools such as...
+                            items:
+                              minLength: 1
+                              type: string
+                            type: array
                           dualStack:
                             description: DualStack binds the server to the IPv6 wildcard
                               address instead of 0.0.0.
@@ -2976,6 +2992,14 @@ spec:
                       server:
                         description: Creates a feature server container
                         properties:
+                          commandPrefix:
+                            description: |-
+                              CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                              server with tools such as...
+                            items:
+                              minLength: 1
+                              type: string
+                            type: array
                           dualStack:
                             description: DualStack binds the server to the IPv6 wildcard
                               address instead of 0.0.0.
@@ -3648,6 +3672,14 @@ spec:
                           server:
                             description: Creates a registry server container
                             properties:
+                              commandPrefix:
+                                description: |-
+                                  CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                                  server with tools such as...
+                                items:
+                                  minLength: 1
+                                  type: string
+                                type: array
                               dualStack:
                                 description: DualStack binds the server to the IPv6
                                   wildcard address instead of 0.0.0.
@@ -5025,6 +5057,14 @@ spec:
                   ui:
                     description: Creates a UI server container
                     properties:
+                      commandPrefix:
+                        description: |-
+                          CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                          server with tools such as...
+                        items:
+                          minLength: 1
+                          type: string
+                        type: array
                       dualStack:
                         description: DualStack binds the server to the IPv6 wildcard
                           address instead of 0.0.0.
@@ -7922,6 +7962,14 @@ spec:
                                 description: Server configuration (image, resources,
                                   env, TLS, etc.).
                                 properties:
+                                  commandPrefix:
+                                    description: |-
+                                      CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                                      server with tools such as...
+                                    items:
+                                      minLength: 1
+                                      type: string
+                                    type: array
                                   dualStack:
                                     description: DualStack binds the server to the
                                       IPv6 wildcard address instead of 0.0.0.
@@ -9340,6 +9388,14 @@ spec:
                           server:
                             description: Creates a remote offline server container
                             properties:
+                              commandPrefix:
+                                description: |-
+                                  CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                                  server with tools such as...
+                                items:
+                                  minLength: 1
+                                  type: string
+                                type: array
                               dualStack:
                                 description: DualStack binds the server to the IPv6
                                   wildcard address instead of 0.0.0.
@@ -9903,6 +9959,14 @@ spec:
                           server:
                             description: Creates a feature server container
                             properties:
+                              commandPrefix:
+                                description: |-
+                                  CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                                  server with tools such as...
+                                items:
+                                  minLength: 1
+                                  type: string
+                                type: array
                               dualStack:
                                 description: DualStack binds the server to the IPv6
                                   wildcard address instead of 0.0.0.
@@ -10589,6 +10653,14 @@ spec:
                               server:
                                 description: Creates a registry server container
                                 properties:
+                                  commandPrefix:
+                                    description: |-
+                                      CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                                      server with tools such as...
+                                    items:
+                                      minLength: 1
+                                      type: string
+                                    type: array
                                   dualStack:
                                     description: DualStack binds the server to the
                                       IPv6 wildcard address instead of 0.0.0.
@@ -11984,6 +12056,14 @@ spec:
                       ui:
                         description: Creates a UI server container
                         properties:
+                          commandPrefix:
+                            description: |-
+                              CommandPrefix is prepended to the operator-generated server command, to wrap the Feast
+                              server with tools such as...
+                            items:
+                              minLength: 1
+                              type: string
+                            type: array
                           dualStack:
                             description: DualStack binds the server to the IPv6 wildcard
                               address instead of 0.0.0.
