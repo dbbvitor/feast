@@ -1013,8 +1013,9 @@ spec:
                               TLS, etc.).
                             properties:
                               dualStack:
-                                description: DualStack binds the server to the IPv6
-                                  wildcard address instead of 0.0.0.
+                                description: |-
+                                  DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                                  Unset or false binds 0.0.0.
                                 type: boolean
                               env:
                                 items:
@@ -2414,8 +2415,9 @@ spec:
                         description: Creates a remote offline server container
                         properties:
                           dualStack:
-                            description: DualStack binds the server to the IPv6 wildcard
-                              address instead of 0.0.0.
+                            description: |-
+                              DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                              Unset or false binds 0.0.0.
                             type: boolean
                           env:
                             items:
@@ -2969,8 +2971,9 @@ spec:
                         description: Creates a feature server container
                         properties:
                           dualStack:
-                            description: DualStack binds the server to the IPv6 wildcard
-                              address instead of 0.0.0.
+                            description: |-
+                              DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                              Unset or false binds 0.0.0.
                             type: boolean
                           env:
                             items:
@@ -3634,8 +3637,9 @@ spec:
                             description: Creates a registry server container
                             properties:
                               dualStack:
-                                description: DualStack binds the server to the IPv6
-                                  wildcard address instead of 0.0.0.
+                                description: |-
+                                  DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                                  Unset or false binds 0.0.0.
                                 type: boolean
                               env:
                                 items:
@@ -5007,8 +5011,9 @@ spec:
                     description: Creates a UI server container
                     properties:
                       dualStack:
-                        description: DualStack binds the server to the IPv6 wildcard
-                          address instead of 0.0.0.
+                        description: |-
+                          DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                          Unset or false binds 0.0.0.
                         type: boolean
                       env:
                         items:
@@ -7904,8 +7909,9 @@ spec:
                                   env, TLS, etc.).
                                 properties:
                                   dualStack:
-                                    description: DualStack binds the server to the
-                                      IPv6 wildcard address instead of 0.0.0.
+                                    description: |-
+                                      DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                                      Unset or false binds 0.0.0.
                                     type: boolean
                                   env:
                                     items:
@@ -9322,8 +9328,9 @@ spec:
                             description: Creates a remote offline server container
                             properties:
                               dualStack:
-                                description: DualStack binds the server to the IPv6
-                                  wildcard address instead of 0.0.0.
+                                description: |-
+                                  DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                                  Unset or false binds 0.0.0.
                                 type: boolean
                               env:
                                 items:
@@ -9885,8 +9892,9 @@ spec:
                             description: Creates a feature server container
                             properties:
                               dualStack:
-                                description: DualStack binds the server to the IPv6
-                                  wildcard address instead of 0.0.0.
+                                description: |-
+                                  DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                                  Unset or false binds 0.0.0.
                                 type: boolean
                               env:
                                 items:
@@ -10564,8 +10572,9 @@ spec:
                                 description: Creates a registry server container
                                 properties:
                                   dualStack:
-                                    description: DualStack binds the server to the
-                                      IPv6 wildcard address instead of 0.0.0.
+                                    description: |-
+                                      DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                                      Unset or false binds 0.0.0.
                                     type: boolean
                                   env:
                                     items:
@@ -11955,8 +11964,9 @@ spec:
                         description: Creates a UI server container
                         properties:
                           dualStack:
-                            description: DualStack binds the server to the IPv6 wildcard
-                              address instead of 0.0.0.
+                            description: |-
+                              DualStack binds the server to the IPv6 wildcard, serving IPv6 and IPv4 clients on Linux.
+                              Unset or false binds 0.0.0.
                             type: boolean
                           env:
                             items:
